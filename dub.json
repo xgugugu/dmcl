@@ -3,17 +3,33 @@
 		"a_out_"
 	],
 	"license": "GPL-3.0-or-later",
-	"name": "mclauncher",
+	"name": "dmcl",
+	"libs": [
+		"curl"
+	],
 	"buildTypes": {
-		"debug": {
+		"debug-windows": {
+			"dflags": [
+				"-static",
+				"-g"
+			]
+		},
+		"release-windows": {
+			"dflags": [
+				"-static",
+				"-O2"
+			]
+		},
+		"debug-linux": {
 			"dflags": [
 				"-g"
 			]
 		},
-		"release": {
+		"release-linux": {
 			"dflags": [
 				"-O2"
 			]
 		}
-	}
+	},
+	"targetName": "dmcl"
 }

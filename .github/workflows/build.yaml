@@ -1,0 +1,26 @@
+name: Run all D Tests
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        dc: [dmd, ldc, ldc-1.40.0]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dlang-community/setup-dlang@v2
+        with:
+          compiler: ${{ matrix.dc }}
+
+      - shell: bash
+        run: dub build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dmcl-${{ matrix.os }}-${{ matrix.dc }}
+          path: ./dmcl
