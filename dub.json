@@ -1,0 +1,19 @@
+{
+	"authors": [
+		"a_out_"
+	],
+	"license": "GPL-3.0-or-later",
+	"name": "mclauncher",
+	"buildTypes": {
+		"debug": {
+			"dflags": [
+				"-g"
+			]
+		},
+		"release": {
+			"dflags": [
+				"-O2"
+			]
+		}
+	}
+}
