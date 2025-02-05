@@ -34,10 +34,10 @@ struct DmclCli
     }
 
     @Command("list-mc", "show minecraft version list")
-    @NamedParam!string("type", "type", "release|snapshot|...", "release")
-    static void list_mc(string type)
+    @NamedParam!(string[])("type", "type", "release,snapshot,...", ["release"])
+    static void list_mc(string[] type)
     {
-        showVersionList(config.download_mirror, [type]);
+        showVersionList(config.download_mirror, type);
     }
 
     @Command("install", "install game")

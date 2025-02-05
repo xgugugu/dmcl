@@ -1,8 +1,9 @@
 module dmcl.cli.cli;
 
 import std.stdio : writeln;
-import std.traits : getUDAs;
+import std.traits : getUDAs, isArray;
 import std.algorithm : startsWith, findSplit;
+import std.array : split;
 import std.conv : to;
 import std.functional : bind;
 
@@ -77,6 +78,15 @@ mixin template CLI_HELP(T)
 
 void startCli(T)(string[] args, T cli)
 {
+    T cliTo(T)(ref string str)
+    {
+        if (isArray!T)
+        {
+            return to!T(str.split(","));
+        }
+        return to!T(str);
+    }
+
     CLI_ARG0 = args[0];
     // parse args
     string[] unnamedargs;
@@ -126,7 +136,7 @@ void startCli(T)(string[] args, T cli)
                     if (param.name in namedargs)
                     {
                         __traits(getMember, params, param.id) =
-                            to!(typeof(param.default_value))(namedargs[param.name]);
+                            cliTo!(typeof(param.default_value))(namedargs[param.name]);
                         param_inited = true;
                     }
                     // if (param_inited == false)
@@ -137,7 +147,7 @@ void startCli(T)(string[] args, T cli)
                 else
                 {
                     __traits(getMember, params, param.id) =
-                        to!(typeof(param.default_value))(unnamedargs[unnamed_idx]);
+                        cliTo!(typeof(param.default_value))(unnamedargs[unnamed_idx]);
                     unnamed_idx++;
                 }
             }
