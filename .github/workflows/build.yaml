@@ -22,4 +22,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dmcl-${{ matrix.os }}-${{ matrix.dc }}
-          path: ./dmcl
+          path: ./
