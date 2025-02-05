@@ -4,9 +4,6 @@
 	],
 	"license": "GPL-3.0-or-later",
 	"name": "dmcl",
-	"libs": [
-		"curl"
-	],
 	"buildTypes": {
 		"debug-windows": {
 			"dflags": [

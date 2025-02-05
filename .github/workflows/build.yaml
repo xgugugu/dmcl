@@ -1,4 +1,3 @@
-name: Run all D Tests
 on: [push, pull_request]
 
 jobs:
