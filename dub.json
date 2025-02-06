@@ -4,30 +4,5 @@
 	],
 	"license": "GPL-3.0-or-later",
 	"name": "dmcl",
-	"buildTypes": {
-		"debug-windows": {
-			"dflags": [
-				"-static",
-				"-g"
-			]
-		},
-		"debug-posix": {
-			"dflags": [
-				"-g"
-			]
-		},
-		"release-windows": {
-			"dflags": [
-				"-static",
-				"-O2"
-			]
-		},
-		"release-posix": {
-			"dflags": [
-				"-O2"
-			]
-		}
-	},
-	"targetPath": "build",
-	"targetName": "dmcl"
+	"targetPath": "build"
 }

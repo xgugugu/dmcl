@@ -1,12 +1,10 @@
 module dmcl.launch.option;
 
 import dmcl.account : Account;
-import dmcl.env : DEFAULT_JVM_ARGUMENTS;
 
 struct LaunchOption
 {
     Account account;
-
     string java_path;
     string root_path;
     string version_name;
@@ -15,6 +13,7 @@ struct LaunchOption
     int min_memory = 512;
     int max_memory = 2048;
     string custom_info = "";
-    string additional_jvm = DEFAULT_JVM_ARGUMENTS;
+    string additional_jvm = "-Dfml.ignoreInvalidMinecraftCertificates=True"
+        ~ "-Dfml.ignorePatchDiscrepancies=True";
     string additional_game = "";
 }

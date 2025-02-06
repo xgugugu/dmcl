@@ -80,7 +80,7 @@ void startCli(T)(string[] args, T cli)
 {
     T cliTo(T)(ref string str)
     {
-        if (isArray!T)
+        if (isArray!T && !is(T == string))
         {
             return to!T(str.split(","));
         }

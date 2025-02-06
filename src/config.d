@@ -19,6 +19,9 @@ struct Config
     int launch_window_height = 480;
     int launch_min_memory = 512;
     int launch_max_memory = 2048;
+    string launch_custom_info = "";
+    string launch_additional_jvm = "-Dfml.ignoreInvalidMinecraftCertificates=True -Dfml.ignorePatchDiscrepancies=True";
+    string launch_additional_game = "";
     // account configs
     bool account_online_mode = false;
     string account_username = "player";

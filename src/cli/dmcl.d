@@ -9,13 +9,21 @@ import dmcl.launch;
 import dmcl.account;
 import dmcl.download;
 import dmcl.config;
+import dmcl.env;
 
 struct DmclCli
 {
     mixin CLI_HELP!DmclCli;
 
+    @Command("version", "show version info")
+    static void version_()
+    {
+        writeln(LAUNCHER_NAME ~ " version " ~ LAUNCHER_VERSION);
+        writeln("build time: " ~ __DATE__ ~ " " ~ __TIME__);
+    }
+
     @Command("config", "show config")
-    static void config_func()
+    static void config_cmd()
     {
         showConfig();
     }
@@ -25,10 +33,12 @@ struct DmclCli
     static void launch(string vername)
     {
         auto account = new OfflineAccount(config.account_username);
-        LaunchOption option = {
-            account, config.launch_java_path, config.launch_minecraft_root_path, vername
-        };
-        auto launcher = new GameLauncher(option);
+        auto launcher = new GameLauncher(LaunchOption(
+                account, config.launch_java_path, config.launch_minecraft_root_path, vername,
+                config.launch_window_width, config.launch_window_height,
+                config.launch_min_memory, config.launch_max_memory, config.launch_custom_info,
+                config.launch_additional_jvm, config.launch_additional_game
+        ));
         writeln(launcher.generateCommand());
         launcher.launchGame();
     }
