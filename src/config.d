@@ -1,12 +1,11 @@
 module dmcl.config;
 
-import dmcl.utils : getConfigPath;
+import dmcl.utils : getConfigPath, getPath;
 
 import std.process : environment;
 import std.json : parseJSON;
 import std.file : readText, exists, getcwd;
 import std.array : array, replaceFirst;
-import std.path : asAbsolutePath;
 import std.stdio : writeln;
 import std.format : format;
 
@@ -34,9 +33,8 @@ struct Config
 
 Config config;
 
-void readConfig(string path = getConfigPath() ~ "/dmcl.json")
+void readConfig(string path = getPath(getConfigPath(), "dmcl.json"))
 {
-    config.launch_minecraft_root_path = asAbsolutePath(config.launch_minecraft_root_path).array;
     if (exists(path))
     {
         auto json = parseJSON(readText(path));
@@ -53,11 +51,12 @@ void readConfig(string path = getConfigPath() ~ "/dmcl.json")
             conf(name.replaceFirst("_", "."), __traits(getMember, config, name));
         }
     }
+    config.launch_minecraft_root_path = getPath(config.launch_minecraft_root_path);
 }
 
 void showConfig()
 {
-    writeln("CONFIG PATH: ", getConfigPath() ~ "/dmcl.json", "\n");
+    writeln("CONFIG PATH: ", getPath(getConfigPath(), "dmcl.json"), "\n");
     foreach (name; __traits(allMembers, Config))
     {
         writeln("%s = %s".format(name.replaceFirst("_", "."), __traits(getMember, config, name)));

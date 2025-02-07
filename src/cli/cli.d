@@ -1,7 +1,7 @@
 module dmcl.cli.cli;
 
 import std.stdio : writeln;
-import std.traits : getUDAs, isArray;
+import std.traits : getUDAs, isArray, hasStaticMember;
 import std.algorithm : startsWith, findSplit;
 import std.array : split;
 import std.conv : to;
@@ -57,21 +57,22 @@ mixin template CLI_HELP(T)
         foreach (name; __traits(allMembers, T))
         {
             auto command = getUDAs!(__traits(getMember, T, name), Command);
-            if (command.length != 1)
-                continue;
-            string cmd = "\t%s %s ".format(baseName(CLI_ARG0), command[0].name);
-            foreach (param; getUDAs!(__traits(getMember, T, name), Param))
+            static if (command.length == 1)
             {
-                if (param.named)
+                string cmd = "\t%s %s ".format(baseName(CLI_ARG0), command[0].name);
+                foreach (param; getUDAs!(__traits(getMember, T, name), Param))
                 {
-                    cmd ~= "--" ~ param.name ~ "=<" ~ param.description ~ "> ";
+                    if (param.named)
+                    {
+                        cmd ~= "--" ~ param.name ~ "=<" ~ param.description ~ "> ";
+                    }
+                    else
+                    {
+                        cmd ~= "<" ~ param.description ~ "> ";
+                    }
                 }
-                else
-                {
-                    cmd ~= "<" ~ param.description ~ "> ";
-                }
+                writeln(cmd ~ ": " ~ command[0].description);
             }
-            writeln(cmd ~ ": " ~ command[0].description);
         }
     }
 }
@@ -89,6 +90,7 @@ void startCli(T)(string[] args, T cli)
 
     CLI_ARG0 = args[0];
     // parse args
+    string cmdname = args.length > 1 ? args[1] : "help";
     string[] unnamedargs;
     string[string] namedargs;
     foreach (ref arg; args.length > 2 ? args[2 .. $] : [])
@@ -97,6 +99,10 @@ void startCli(T)(string[] args, T cli)
         { // named arg
             auto str = arg[2 .. $].findSplit("=");
             namedargs[str[0]] = str[2];
+            static if (hasStaticMember!(T, "preProcessArguments"))
+            {
+                cli.preProcessArguments(cmdname, str[0], str[2]);
+            }
         }
         else
         { // unnamed arg
@@ -104,57 +110,55 @@ void startCli(T)(string[] args, T cli)
         }
     }
     // run func
-    string cmdname = args.length > 1 ? args[1] : "help";
     foreach (name; __traits(allMembers, T))
     {
         auto command = getUDAs!(__traits(getMember, cli, name), Command);
-        if (command.length != 1)
-            continue;
-
-        struct ParamStruct
+        static if (command.length == 1)
         {
-            static foreach (param; getUDAs!(__traits(getMember, cli, name), Param))
+            struct ParamStruct
             {
-                mixin(typeof(param.default_value).stringof ~ " " ~ param.id ~ ";");
-            }
-        }
-
-        if (command[0].name == cmdname)
-        {
-            ParamStruct params;
-            int unnamed_idx = 0;
-            foreach (param; getUDAs!(__traits(getMember, cli, name), Param))
-            {
-                if (param.named == true)
+                static foreach (param; getUDAs!(__traits(getMember, cli, name), Param))
                 {
-                    bool param_inited = false;
-                    if (param.has_defval)
+                    mixin(typeof(param.default_value).stringof ~ " " ~ param.id ~ ";");
+                }
+            }
+
+            if (command[0].name == cmdname)
+            {
+                ParamStruct params;
+                int unnamed_idx = 0;
+                foreach (param; getUDAs!(__traits(getMember, cli, name), Param))
+                {
+                    if (param.named == true)
                     {
-                        __traits(getMember, params, param.id) = param.default_value;
-                        param_inited = true;
+                        bool param_inited = false;
+                        if (param.has_defval)
+                        {
+                            __traits(getMember, params, param.id) = param.default_value;
+                            param_inited = true;
+                        }
+                        if (param.name in namedargs)
+                        {
+                            __traits(getMember, params, param.id) =
+                                cliTo!(typeof(param.default_value))(namedargs[param.name]);
+                            param_inited = true;
+                        }
+                        // if (param_inited == false)
+                        // {
+                        //     throw new Error("missing argument: " ~ param.id);
+                        // }
                     }
-                    if (param.name in namedargs)
+                    else
                     {
                         __traits(getMember, params, param.id) =
-                            cliTo!(typeof(param.default_value))(namedargs[param.name]);
-                        param_inited = true;
+                            cliTo!(typeof(param.default_value))(unnamedargs[unnamed_idx]);
+                        unnamed_idx++;
                     }
-                    // if (param_inited == false)
-                    // {
-                    //     throw new Error("missing argument: " ~ param.id);
-                    // }
                 }
-                else
-                {
-                    __traits(getMember, params, param.id) =
-                        cliTo!(typeof(param.default_value))(unnamedargs[unnamed_idx]);
-                    unnamed_idx++;
-                }
+                params.bind!(__traits(getMember, cli, name));
+                return;
             }
-            params.bind!(__traits(getMember, cli, name));
-            return;
         }
     }
-
     writeln("unknown command");
 }

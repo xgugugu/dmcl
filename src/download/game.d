@@ -1,7 +1,7 @@
 module dmcl.download.game;
 
 import dmcl.download;
-import dmcl.utils : libNameToPath, getOSName, checkRules;
+import dmcl.utils : libNameToPath, getOSName, checkRules, readVersionJSONSafe;
 import dmcl.config : config;
 
 import std.net.curl : get;
@@ -42,7 +42,6 @@ void downloadVanilla(string mirror, string root_path, string version_id, string 
 
     writeln("%s.json".format(version_name));
     auto json = parseJSON(get(mirrorUrl(mirror, mc_meta, getVersionURL())));
-    mkdirRecurse("%s/versions/%s".format(root_path, version_name));
     writeSafe("%s/versions/%s/%s.json".format(root_path, version_name, version_name), json.toString());
     downloadFile(DownloadFileMeta(
             mirrorUrl(mirror, mc_maven, json["downloads"]["client"]["url"].str),
@@ -56,7 +55,7 @@ void downloadVanilla(string mirror, string root_path, string version_id, string 
 
 void downloadLibraries(string mirror, string root_path, string version_name)
 {
-    auto json = parseJSON(readText("%s/versions/%s/%s.json".format(root_path, version_name, version_name)));
+    auto json = readVersionJSONSafe(root_path, version_name);
     foreach (ref lib; json["libraries"].array)
     {
         if ("rules" !in lib || checkRules(lib["rules"]))
@@ -75,7 +74,7 @@ void downloadLibraries(string mirror, string root_path, string version_name)
             }
             else
             { // modloader libs
-                throw new Error("unsupported");
+                writeln("libraries without download url are unsupported");
                 // result ~= "%s/libraries/%s${classpath_separator}".format(
                 //     option.root_path, libNameToPath(lib["name"].str));
             }
@@ -99,7 +98,7 @@ void downloadLibraries(string mirror, string root_path, string version_name)
 
 void downloadAssets(string mirror, string root_path, string version_name)
 {
-    auto verjson = parseJSON(readText("%s/versions/%s/%s.json".format(root_path, version_name, version_name)));
+    auto verjson = readVersionJSONSafe(root_path, version_name);
     string id = verjson["assetIndex"]["id"].str;
     auto json = parseJSON(get(mirrorUrl(mirror, mc_meta, verjson["assetIndex"]["url"].str)));
     writeSafe("%s/assets/indexes/%s.json".format(root_path, id), json.toString());

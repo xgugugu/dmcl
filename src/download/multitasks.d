@@ -1,6 +1,7 @@
 module dmcl.download.multitasks;
 
 import dmcl.config : config;
+import dmcl.utils : getPath;
 
 import std.parallelism : TaskPool, defaultPoolThreads, task;
 import std.net.curl : download;
@@ -12,14 +13,14 @@ import std.stdio : writeln;
 
 void writeSafe(string filename, string context)
 {
-    mkdirRecurse(dirName(filename));
-    write(filename, context);
+    mkdirRecurse(dirName(getPath(filename)));
+    write(getPath(filename), context);
 }
 
 void downloadSafe(string url, string save_to)
 {
-    mkdirRecurse(dirName(save_to));
-    download(url, save_to);
+    mkdirRecurse(dirName(getPath(save_to)));
+    download(url, getPath(save_to));
 }
 
 struct DownloadFileMeta
@@ -32,15 +33,17 @@ int downloadFiles_downloadFunc(DownloadFileMeta meta)
 {
     mkdirRecurse(dirName(meta.save_to));
     int retrycnt = 0;
+    if (exists(meta.save_to) &&
+        (toHexString!(LetterCase.lower)(sha1Of(read(meta.save_to))) == meta.sha1
+            || meta.sha1 == null))
+    {
+        return 0;
+    }
     while (true)
     {
-        if (exists(meta.save_to) &&
-            toHexString!(LetterCase.lower)(sha1Of(read(meta.save_to))) == meta.sha1)
-        {
-            break;
-        }
         download(meta.url, meta.save_to);
-        if (meta.sha1 == null)
+        if (toHexString!(LetterCase.lower)(sha1Of(read(meta.save_to))) == meta.sha1
+            || meta.sha1 == null)
         {
             break;
         }
@@ -62,6 +65,7 @@ void downloadFile(DownloadFileMeta meta)
     {
         taskPool = new TaskPool(config.download_max_tasks);
     }
+    meta.save_to = getPath(meta.save_to);
     taskPool.put(task!downloadFiles_downloadFunc(meta));
 }
 

@@ -7,7 +7,10 @@ import std.stdio : writeln;
 
 void main(string[] args)
 {
+	debug
+	{
+		writeln("!!! DMCL SNAPSHOT !!!\n");
+	}
 	readConfig();
-	writeln("!!! DMCL SNAPSHOT !!!\n");
 	startCli(args, DmclCli());
 }

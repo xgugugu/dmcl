@@ -15,6 +15,16 @@ struct DmclCli
 {
     mixin CLI_HELP!DmclCli;
 
+    static void preProcessArguments(string _, string key, string value)
+    {
+        final switch (key)
+        {
+        case "java":
+            config.launch_java_path = value;
+            break;
+        }
+    }
+
     @Command("version", "show version info")
     static void version_()
     {
@@ -32,6 +42,9 @@ struct DmclCli
     @UnnamedParam!string("vername", "version-name")
     static void launch(string vername)
     {
+        downloadLibraries(config.download_mirror, config.launch_minecraft_root_path, vername);
+        downloadAssets(config.download_mirror, config.launch_minecraft_root_path, vername);
+        waitDownloads();
         auto account = new OfflineAccount(config.account_username);
         auto launcher = new GameLauncher(LaunchOption(
                 account, config.launch_java_path, config.launch_minecraft_root_path, vername,
@@ -50,11 +63,26 @@ struct DmclCli
         showVersionList(config.download_mirror, type);
     }
 
+    @Command("list-forge", "show forge version list")
+    @UnnamedParam!(string)("verid", "mc-version-id")
+    static void list_forge(string mcver)
+    {
+        showForgeVersionList(mcver);
+    }
+
     @Command("install", "install game")
-    @UnnamedParam!string("verid", "version-id")
+    @UnnamedParam!string("verid", "mc-version-id")
     @UnnamedParam!string("vername", "version-name")
-    static void install(string verid, string vername)
+    static void install_mc(string verid, string vername)
     {
         downloadVanilla(config.download_mirror, getcwd() ~ "/.minecraft", verid, vername);
+    }
+
+    @Command("install-forge", "install forge on version")
+    @UnnamedParam!string("vername", "version-name")
+    @UnnamedParam!string("forgever", "forge-version-id")
+    static void install_forge(string vername, string forgever)
+    {
+        installForge(vername, forgever);
     }
 }
