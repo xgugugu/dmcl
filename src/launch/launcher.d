@@ -84,7 +84,17 @@ class GameLauncher
                 }
                 else if ("rules" in arg && checkRules(arg["rules"]))
                 {
-                    args ~= arg["value"].str;
+                    if (arg["value"].type == JSONType.array)
+                    {
+                        foreach (ref val; arg["value"].array)
+                        {
+                            args ~= val.str;
+                        }
+                    }
+                    else
+                    {
+                        args ~= arg["value"].str;
+                    }
                 }
             }
             return args;
