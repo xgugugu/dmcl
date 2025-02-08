@@ -1,11 +1,11 @@
 module dmcl.launch.option;
 
+import dmcl.launch;
 import dmcl.account : Account;
 
 struct LaunchOption
 {
     Account account;
-    string java_path;
     string root_path;
     string version_name;
     int window_width = 854;

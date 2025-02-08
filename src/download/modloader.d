@@ -7,7 +7,7 @@ import std.stdio : writeln;
 import std.format : format;
 
 // Forge
-void showForgeVersionList(string mcver)
+void showForgeVersionList(string mirror, string mcver)
 {
     // only support bmclapi
     auto json = parseJSON(get("https://bmclapi2.bangbang93.com/forge/minecraft/" ~ mcver));
@@ -18,7 +18,7 @@ void showForgeVersionList(string mcver)
     }
 }
 
-void installForge(string vername, string forgever)
+void installForge(string mirror, string vername, string forgever)
 {
-    
+
 }

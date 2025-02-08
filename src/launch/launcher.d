@@ -1,23 +1,28 @@
 module dmcl.launch.launcher;
 
 import dmcl.launch;
+import dmcl.config : config;
 import dmcl.env : LAUNCHER_NAME, LAUNCHER_VERSION;
 import dmcl.utils : getOSName, extractZip, libNameToPath, checkRules, mergeJSON, readVersionJSONSafe, getPath;
 
 import std.format : format;
-import std.file : readText, exists;
+import std.file : readText, exists, tempDir;
 import std.json : JSONValue, JSONType, parseJSON;
 import std.array : split, replace, replaceLast;
 import std.system : os, arch = instructionSetArchitecture;
 import std.conv : to;
 import std.process : pipeProcess, escapeShellCommand, Redirect, Config;
-import std.path : pathSeparator;
+import std.path : pathSeparator, driveName;
+import std.stdio : writeln;
+import std.uuid : sha1UUID;
+import std.math : abs;
 
 class GameLauncher
 {
     LaunchOption option;
     string version_path;
     string natives_path;
+    JavaOption java;
     JSONValue json;
 
     string getLibraries()
@@ -44,7 +49,8 @@ class GameLauncher
                 { // native libs
                     if (getOSName() in lib["natives"].object)
                     {
-                        string native_name = lib["natives"][getOSName()].str;
+                        string native_name = lib["natives"][getOSName()].str
+                            .replace("${arch}", to!string(java.arch));
                         string jar_path = getPath("%s/libraries/%s".format(option.root_path,
                                 lib["downloads"]["classifiers"][native_name]["path"].str));
                         extractZip(jar_path, natives_path);
@@ -101,11 +107,54 @@ class GameLauncher
         }
     }
 
+    void selectJava()
+    {
+        string java_name = config.launch_java;
+        auto required_major = json["javaVersion"]["majorVersion"].integer;
+        if (java_name == "autoselect")
+        {
+            if (config.launch_java_configs.length == 0)
+            {
+                findJava();
+            }
+            if (config.launch_java_configs.length == 0)
+            {
+                throw new Error("no configured java");
+            }
+            long minn = 1024;
+            foreach (string name, ref path; config.launch_java_configs)
+            {
+                auto thisjava = JavaOption(path);
+                if (thisjava.major_version >= required_major
+                    && abs(thisjava.major_version - required_major) < minn)
+                {
+                    minn = abs(thisjava.major_version - required_major), java_name = name;
+                }
+                if (thisjava.major_version == required_major)
+                {
+                    java_name = name;
+                    break;
+                }
+            }
+            if (java_name == "autoselect")
+            {
+                java_name = config.launch_java_configs.keys[0];
+            }
+        }
+        java = JavaOption(config.launch_java_configs[java_name]);
+        if (java.major_version != required_major)
+        {
+            writeln("warning: using unsupported java version(require %s but using %s)"
+                    .format(required_major, java.major_version));
+        }
+    }
+
     string[] genArgs()
     {
         string[] args;
         // java path
-        args ~= option.java_path;
+        selectJava();
+        args ~= java.path;
         // jvm args
         if ("arguments" in json.object)
         { // 1.13 or later
@@ -176,8 +225,8 @@ public:
     {
         option = arg_option;
         version_path = getPath("%s/versions/%s".format(option.root_path, option.version_name));
-        natives_path = getPath("%s/natives-%s-%s-%s".format(version_path, getOSName(),
-                to!string(arch), LAUNCHER_NAME));
+        natives_path = getPath(tempDir(), "dmcl-natives-%s"
+                .format(sha1UUID(option.version_name).toString()));
         json = readVersionJSONSafe(option.root_path, option.version_name);
     }
 
@@ -188,7 +237,10 @@ public:
 
     GameMonitor launchGame()
     {
-        pipeProcess(genArgs(), Redirect.all, null, Config.none, version_path);
+        auto args = genArgs();
+        writeln("command: ", escapeShellCommand(["cd", driveName(version_path)]), " && ",
+            escapeShellCommand(["cd", version_path]), " && ", escapeShellCommand(args));
+        pipeProcess(args, Redirect.all, null, Config.none, version_path);
         return new GameMonitor();
     }
 }

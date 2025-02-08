@@ -20,7 +20,8 @@ struct DmclCli
         final switch (key)
         {
         case "java":
-            config.launch_java_path = value;
+            config.launch_java_configs[value] = value;
+            config.launch_java = value;
             break;
         }
     }
@@ -38,6 +39,12 @@ struct DmclCli
         showConfig();
     }
 
+    @Command("find-java", "auto find java")
+    static void find_java()
+    {
+        findJava();
+    }
+
     @Command("launch", "launch game")
     @UnnamedParam!string("vername", "version-name")
     static void launch(string vername)
@@ -47,12 +54,11 @@ struct DmclCli
         waitDownloads();
         auto account = new OfflineAccount(config.account_username);
         auto launcher = new GameLauncher(LaunchOption(
-                account, config.launch_java_path, config.launch_minecraft_root_path, vername,
+                account, config.launch_minecraft_root_path, vername,
                 config.launch_window_width, config.launch_window_height,
                 config.launch_min_memory, config.launch_max_memory, config.launch_custom_info,
                 config.launch_additional_jvm, config.launch_additional_game
         ));
-        writeln(launcher.generateCommand());
         launcher.launchGame();
     }
 
@@ -67,7 +73,7 @@ struct DmclCli
     @UnnamedParam!(string)("verid", "mc-version-id")
     static void list_forge(string mcver)
     {
-        showForgeVersionList(mcver);
+        showForgeVersionList(config.download_mirror, mcver);
     }
 
     @Command("install", "install game")
@@ -75,7 +81,7 @@ struct DmclCli
     @UnnamedParam!string("vername", "version-name")
     static void install_mc(string verid, string vername)
     {
-        downloadVanilla(config.download_mirror, getcwd() ~ "/.minecraft", verid, vername);
+        downloadVanilla(config.download_mirror, config.launch_minecraft_root_path, verid, vername);
     }
 
     @Command("install-forge", "install forge on version")
@@ -83,6 +89,6 @@ struct DmclCli
     @UnnamedParam!string("forgever", "forge-version-id")
     static void install_forge(string vername, string forgever)
     {
-        installForge(vername, forgever);
+        installForge(config.download_mirror, vername, forgever);
     }
 }

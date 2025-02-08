@@ -40,8 +40,6 @@ struct Param(T, bool isNamed)
 alias NamedParam(T) = Param!(T, true);
 alias UnnamedParam(T) = Param!(T, false);
 
-string CLI_ARG0 = null;
-
 mixin template CLI_HELP(T)
 {
     @Command("help", "show help")
@@ -52,6 +50,7 @@ mixin template CLI_HELP(T)
         import std.traits : getUDAs;
         import std.conv : to;
         import std.path : baseName;
+        import std.file : thisExePath;
 
         writeln("USAGE:");
         foreach (name; __traits(allMembers, T))
@@ -59,7 +58,7 @@ mixin template CLI_HELP(T)
             auto command = getUDAs!(__traits(getMember, T, name), Command);
             static if (command.length == 1)
             {
-                string cmd = "\t%s %s ".format(baseName(CLI_ARG0), command[0].name);
+                string cmd = "\t%s %s ".format(baseName(thisExePath()), command[0].name);
                 foreach (param; getUDAs!(__traits(getMember, T, name), Param))
                 {
                     if (param.named)
@@ -88,7 +87,6 @@ void startCli(T)(string[] args, T cli)
         return to!T(str);
     }
 
-    CLI_ARG0 = args[0];
     // parse args
     string cmdname = args.length > 1 ? args[1] : "help";
     string[] unnamedargs;

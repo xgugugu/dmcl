@@ -8,7 +8,6 @@ import std.format : format;
 import std.json : JSONValue, JSONType, parseJSON;
 import std.path : absolutePath, buildNormalizedPath;
 import std.array : array;
-import std.process : environment;
 
 string getPath(string[] paths...)
 {
@@ -64,7 +63,7 @@ bool checkRules(ref JSONValue rules)
         if (action == "allow")
         {
             if ("os" in rule.object && (("name" in rule["os"].object && rule["os"]["name"].str != getOSName())
-                    || ("name" !in rule["os"].object)))
+                    || ("name" !in rule["os"].object) || ("version" in rule["os"].object)))
             {
                 return false;
             }
@@ -78,22 +77,6 @@ bool checkRules(ref JSONValue rules)
         }
     }
     return true;
-}
-
-string getConfigPath()
-{
-    version (Windows)
-    {
-        return environment["APPDATA"];
-    }
-    else version (Posix)
-    {
-        return environment["HOME"] ~ "/.config";
-    }
-    else
-    {
-        return getPath(".");
-    }
 }
 
 void mergeJSON(ref JSONValue target, const ref JSONValue source)
