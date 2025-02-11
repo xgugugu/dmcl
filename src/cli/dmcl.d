@@ -79,17 +79,30 @@ struct DmclCli
         showForgeVersionList(config.download_mirror, mcver);
     }
 
+    @Command("list-neoforge", "show forge version list")
+    @UnnamedParam!(string)("verid", "mc-version-id")
+    static void list_neoforge(string mcver)
+    {
+        showNeoForgeVersionList(config.download_mirror, mcver);
+    }
+
     @Command("install", "install game")
     @UnnamedParam!string("verid", "mc-version-id")
     @UnnamedParam!string("vername", "version-name")
     @NamedParam!bool("is_install_forge", "forge")
-    static void install(string verid, string vername, bool is_install_forge)
+    @NamedParam!bool("is_install_neoforge", "neoforge")
+    static void install(string verid, string vername, bool is_install_forge, bool is_install_neoforge)
     {
         downloadVanilla(config.download_mirror, config.launch_minecraft_root_path, verid, vername);
         if (is_install_forge)
         {
             installForge(config.download_mirror, config.launch_minecraft_root_path,
                 vername, getLatestForge(config.download_mirror, verid));
+        }
+        if (is_install_neoforge)
+        {
+            installNeoForge(config.download_mirror, config.launch_minecraft_root_path,
+                vername, getLatestNeoForge(config.download_mirror, verid));
         }
         downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
     }
@@ -100,6 +113,15 @@ struct DmclCli
     static void install_forge(string vername, string forgever)
     {
         installForge(config.download_mirror, config.launch_minecraft_root_path, vername, forgever);
+        downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
+    }
+
+    @Command("install-neoforge", "install neoforge on version")
+    @UnnamedParam!string("vername", "version-name")
+    @UnnamedParam!string("forgever", "neoforge-version-id")
+    static void install_neoforge(string vername, string forgever)
+    {
+        installNeoForge(config.download_mirror, config.launch_minecraft_root_path, vername, forgever);
         downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
     }
 }

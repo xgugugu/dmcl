@@ -19,7 +19,6 @@ import std.process : execute, Config;
 import std.digest.sha : sha1Of, toHexString, LetterCase;
 import std.string : strip;
 
-// Forge
 string bmclapiGetForgeVersionName(ref JSONValue ver)
 {
     string name = ver["mcversion"].str ~ "-" ~ ver["version"].str;

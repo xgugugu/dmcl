@@ -25,6 +25,11 @@ immutable string[string] forge_maven = [
     "bmclapi": "https://bmclapi2.bangbang93.com/maven"
 ];
 
+immutable string[string] neoforge_maven = [
+    "official": "https://maven.neoforged.net/releases",
+    "bmclapi": "https://bmclapi2.bangbang93.com/maven"
+];
+
 string mirrorUrl(string mirror, immutable string[string] mirrors, string url)
 {
     if (mirrors != null)
@@ -33,7 +38,7 @@ string mirrorUrl(string mirror, immutable string[string] mirrors, string url)
     }
     else
     {
-        foreach (ref rules; [mc_maven, mc_assets, forge_maven])
+        foreach (ref rules; [mc_maven, mc_assets, forge_maven, neoforge_maven])
         {
             if (url.canFind(rules[mirror]))
             {
