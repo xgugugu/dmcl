@@ -10,6 +10,8 @@ import std.conv : to;
 import std.file : dirEntries, SpanMode;
 import std.stdio : writeln;
 import std.format : format;
+import std.process : environment;
+import std.math : abs;
 
 struct JavaOption
 {
@@ -39,7 +41,11 @@ void findJava()
     }
     else version (Windows)
     {
-        string[] possible_paths = [];
+        string[] possible_paths = [
+            environment["ProgramFiles"],
+            environment["ProgramFiles(x86)"],
+            environment["APPDATA"]
+        ];
         string pattern = "java.exe";
         throw new Error("finding java are not supported on windows!");
     }
@@ -64,4 +70,46 @@ void findJava()
     config.launch_java_configs = java_configs;
     config.launch_java = "autoselect";
     saveConfig!("launch_java_configs", "launch_java")();
+}
+
+JavaOption selectJava(long required_major)
+{
+    string java_name = config.launch_java;
+    if (java_name == "autoselect")
+    {
+        if (config.launch_java_configs.length == 0)
+        {
+            findJava();
+        }
+        if (config.launch_java_configs.length == 0)
+        {
+            throw new Error("no configured java");
+        }
+        long minn = 1024;
+        foreach (string name, ref path; config.launch_java_configs)
+        {
+            auto thisjava = JavaOption(path);
+            if (thisjava.major_version >= required_major
+                && abs(thisjava.major_version - required_major) < minn)
+            {
+                minn = abs(thisjava.major_version - required_major), java_name = name;
+            }
+            if (thisjava.major_version == required_major)
+            {
+                java_name = name;
+                break;
+            }
+        }
+        if (java_name == "autoselect")
+        {
+            java_name = config.launch_java_configs.keys[0];
+        }
+    }
+    auto java = JavaOption(config.launch_java_configs[java_name]);
+    if (java.major_version != required_major)
+    {
+        writeln("warning: using unsupported java version(require %s but using %s)"
+                .format(required_major, java.major_version));
+    }
+    return java;
 }

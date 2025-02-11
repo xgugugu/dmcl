@@ -17,11 +17,16 @@ struct DmclCli
 
     static void preProcessArguments(string _, string key, string value)
     {
-        final switch (key)
+        switch (key)
         {
         case "java":
             config.launch_java_configs[value] = value;
             config.launch_java = value;
+            break;
+        case "mirror":
+            config.download_mirror = value;
+            break;
+        default:
             break;
         }
     }
@@ -49,9 +54,7 @@ struct DmclCli
     @UnnamedParam!string("vername", "version-name")
     static void launch(string vername)
     {
-        downloadLibraries(config.download_mirror, config.launch_minecraft_root_path, vername);
-        downloadAssets(config.download_mirror, config.launch_minecraft_root_path, vername);
-        waitDownloads();
+        downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
         auto account = new OfflineAccount(config.account_username);
         auto launcher = new GameLauncher(LaunchOption(
                 account, config.launch_minecraft_root_path, vername,
@@ -79,9 +82,16 @@ struct DmclCli
     @Command("install", "install game")
     @UnnamedParam!string("verid", "mc-version-id")
     @UnnamedParam!string("vername", "version-name")
-    static void install_mc(string verid, string vername)
+    @NamedParam!bool("is_install_forge", "forge")
+    static void install(string verid, string vername, bool is_install_forge)
     {
         downloadVanilla(config.download_mirror, config.launch_minecraft_root_path, verid, vername);
+        if (is_install_forge)
+        {
+            installForge(config.download_mirror, config.launch_minecraft_root_path,
+                vername, getLatestForge(config.download_mirror, verid));
+        }
+        downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
     }
 
     @Command("install-forge", "install forge on version")
@@ -89,6 +99,7 @@ struct DmclCli
     @UnnamedParam!string("forgever", "forge-version-id")
     static void install_forge(string vername, string forgever)
     {
-        installForge(config.download_mirror, vername, forgever);
+        installForge(config.download_mirror, config.launch_minecraft_root_path, vername, forgever);
+        downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
     }
 }

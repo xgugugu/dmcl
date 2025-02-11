@@ -1,27 +1,14 @@
 module dmcl.download.multitasks;
 
 import dmcl.config : config;
-import dmcl.utils : getPath;
+import dmcl.utils : getPath, getDownload, writeSafe, downloadSafe;
 
 import std.parallelism : TaskPool, defaultPoolThreads, task;
-import std.net.curl : download;
 import std.array : replicate;
-import std.file : mkdirRecurse, read, exists, write;
-import std.path : dirName, baseName;
-import std.digest.sha : sha1Of, toHexString, LetterCase;
 import std.stdio : writeln;
-
-void writeSafe(string filename, string context)
-{
-    mkdirRecurse(dirName(getPath(filename)));
-    write(getPath(filename), context);
-}
-
-void downloadSafe(string url, string save_to)
-{
-    mkdirRecurse(dirName(getPath(save_to)));
-    download(url, getPath(save_to));
-}
+import std.path : baseName;
+import std.file : exists, read;
+import std.digest.sha : sha1Of, toHexString, LetterCase;
 
 struct DownloadFileMeta
 {
@@ -31,29 +18,12 @@ struct DownloadFileMeta
 
 int downloadFiles_downloadFunc(DownloadFileMeta meta)
 {
-    mkdirRecurse(dirName(meta.save_to));
-    int retrycnt = 0;
-    if (exists(meta.save_to) &&
-        (toHexString!(LetterCase.lower)(sha1Of(read(meta.save_to))) == meta.sha1
-            || meta.sha1 == null))
+    if (!(exists(meta.save_to) && (meta.sha1 == null
+            || toHexString!(LetterCase.lower)(sha1Of(read(meta.save_to))) == meta.sha1)))
     {
-        return 0;
+        downloadSafe(meta.url, meta.save_to, meta.sha1);
+        writeln(baseName(meta.save_to));
     }
-    while (true)
-    {
-        download(meta.url, meta.save_to);
-        if (toHexString!(LetterCase.lower)(sha1Of(read(meta.save_to))) == meta.sha1
-            || meta.sha1 == null)
-        {
-            break;
-        }
-        retrycnt++;
-        if (retrycnt == config.download_max_retry)
-        {
-            throw new Error("retry too many times");
-        }
-    }
-    writeln(baseName(meta.save_to));
     return 0;
 }
 
@@ -74,5 +44,6 @@ void waitDownloads()
     if (!(taskPool is null))
     {
         taskPool.finish(true);
+        taskPool = null;
     }
 }

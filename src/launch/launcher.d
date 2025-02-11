@@ -3,7 +3,8 @@ module dmcl.launch.launcher;
 import dmcl.launch;
 import dmcl.config : config;
 import dmcl.env : LAUNCHER_NAME, LAUNCHER_VERSION;
-import dmcl.utils : getOSName, extractZip, libNameToPath, checkRules, mergeJSON, readVersionJSONSafe, getPath;
+import dmcl.utils : getOSName, extractZip, libNameToPath, checkRules, compareVersion,
+    mergeJSON, readVersionJSONSafe, getPath, libNameGetName, libNameGetVersion;
 
 import std.format : format;
 import std.file : readText, exists, tempDir;
@@ -27,7 +28,13 @@ class GameLauncher
 
     string getLibraries()
     {
-        string result;
+        struct Lib
+        {
+            string ver;
+            string path;
+        }
+
+        Lib[string] libs;
         foreach (ref lib; json["libraries"].array)
         {
             if ("rules" !in lib || checkRules(lib["rules"]))
@@ -35,18 +42,28 @@ class GameLauncher
                 if ("downloads" in lib.object)
                 { // vanllia libs
                     if ("artifact" in lib["downloads"].object)
-                    { // java libs
-                        result ~= getPath("%s/libraries/%s${classpath_separator}".format(option.root_path,
-                                lib["downloads"]["artifact"]["path"].str));
+                    {
+                        string name = libNameGetName(lib["name"].str);
+                        string ver = libNameGetVersion(lib["name"].str);
+                        if (name !in libs || compareVersion(ver, libs[name].ver) > 0)
+                        {
+                            libs[name] = Lib(ver, getPath(option.root_path,
+                                    "libraries", lib["downloads"]["artifact"]["path"].str));
+                        }
                     }
                 }
                 else
                 { // modloader libs
-                    result ~= getPath("%s/libraries/%s${classpath_separator}".format(
-                            option.root_path, libNameToPath(lib["name"].str)));
+                    string name = libNameGetName(lib["name"].str);
+                    string ver = libNameGetVersion(lib["name"].str);
+                    if (name !in libs || compareVersion(ver, libs[name].ver) > 0)
+                    {
+                        libs[name] = Lib(ver, getPath(option.root_path,
+                                "libraries", libNameToPath(lib["name"].str)));
+                    }
                 }
                 if ("natives" in lib.object)
-                { // native libs
+                { // native libs: extract
                     if (getOSName() in lib["natives"].object)
                     {
                         string native_name = lib["natives"][getOSName()].str
@@ -57,6 +74,11 @@ class GameLauncher
                     }
                 }
             }
+        }
+        string result;
+        foreach (ref Lib lib; libs)
+        {
+            result ~= lib.path ~ "${classpath_separator}";
         }
         if ("inheritsFrom" in json.object)
         { // if json based on another, add it to cp
@@ -107,53 +129,11 @@ class GameLauncher
         }
     }
 
-    void selectJava()
-    {
-        string java_name = config.launch_java;
-        auto required_major = json["javaVersion"]["majorVersion"].integer;
-        if (java_name == "autoselect")
-        {
-            if (config.launch_java_configs.length == 0)
-            {
-                findJava();
-            }
-            if (config.launch_java_configs.length == 0)
-            {
-                throw new Error("no configured java");
-            }
-            long minn = 1024;
-            foreach (string name, ref path; config.launch_java_configs)
-            {
-                auto thisjava = JavaOption(path);
-                if (thisjava.major_version >= required_major
-                    && abs(thisjava.major_version - required_major) < minn)
-                {
-                    minn = abs(thisjava.major_version - required_major), java_name = name;
-                }
-                if (thisjava.major_version == required_major)
-                {
-                    java_name = name;
-                    break;
-                }
-            }
-            if (java_name == "autoselect")
-            {
-                java_name = config.launch_java_configs.keys[0];
-            }
-        }
-        java = JavaOption(config.launch_java_configs[java_name]);
-        if (java.major_version != required_major)
-        {
-            writeln("warning: using unsupported java version(require %s but using %s)"
-                    .format(required_major, java.major_version));
-        }
-    }
-
     string[] genArgs()
     {
         string[] args;
         // java path
-        selectJava();
+        java = selectJava(json["javaVersion"]["majorVersion"].integer);
         args ~= java.path;
         // jvm args
         if ("arguments" in json.object)

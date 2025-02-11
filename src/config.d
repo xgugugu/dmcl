@@ -31,7 +31,6 @@ struct Config
     // download configs
     int download_max_tasks = 64;
     bool download_i_dont_need_music = false;
-    int download_max_retry = 5;
     string download_mirror = "official";
 }
 

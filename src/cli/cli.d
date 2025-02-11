@@ -2,7 +2,7 @@ module dmcl.cli.cli;
 
 import std.stdio : writeln;
 import std.traits : getUDAs, isArray, hasStaticMember;
-import std.algorithm : startsWith, findSplit;
+import std.algorithm : startsWith, findSplit, canFind;
 import std.array : split;
 import std.conv : to;
 import std.functional : bind;
@@ -63,7 +63,14 @@ mixin template CLI_HELP(T)
                 {
                     if (param.named)
                     {
-                        cmd ~= "--" ~ param.name ~ "=<" ~ param.description ~ "> ";
+                        if (param.description != null)
+                        {
+                            cmd ~= "--" ~ param.name ~ "=<" ~ param.description ~ "> ";
+                        }
+                        else
+                        {
+                            cmd ~= "--" ~ param.name ~ " ";
+                        }
                     }
                     else
                     {
@@ -95,11 +102,22 @@ void startCli(T)(string[] args, T cli)
     {
         if (arg.startsWith("--"))
         { // named arg
-            auto str = arg[2 .. $].findSplit("=");
-            namedargs[str[0]] = str[2];
-            static if (hasStaticMember!(T, "preProcessArguments"))
+            if (arg[2 .. $].canFind("="))
             {
-                cli.preProcessArguments(cmdname, str[0], str[2]);
+                auto str = arg[2 .. $].findSplit("=");
+                namedargs[str[0]] = str[2];
+                static if (hasStaticMember!(T, "preProcessArguments"))
+                {
+                    cli.preProcessArguments(cmdname, str[0], str[2]);
+                }
+            }
+            else
+            { // bool arg
+                namedargs[arg[2 .. $]] = "true";
+                static if (hasStaticMember!(T, "preProcessArguments"))
+                {
+                    cli.preProcessArguments(cmdname, arg[2 .. $], "true");
+                }
             }
         }
         else
@@ -127,24 +145,32 @@ void startCli(T)(string[] args, T cli)
                 int unnamed_idx = 0;
                 foreach (param; getUDAs!(__traits(getMember, cli, name), Param))
                 {
-                    if (param.named == true)
+                    static if (param.named == true)
                     {
-                        bool param_inited = false;
-                        if (param.has_defval)
-                        {
-                            __traits(getMember, params, param.id) = param.default_value;
-                            param_inited = true;
-                        }
-                        if (param.name in namedargs)
+                        static if (is(typeof(param.default_value) == bool))
                         {
                             __traits(getMember, params, param.id) =
-                                cliTo!(typeof(param.default_value))(namedargs[param.name]);
-                            param_inited = true;
+                                (param.name in namedargs) ? true : false;
                         }
-                        // if (param_inited == false)
-                        // {
-                        //     throw new Error("missing argument: " ~ param.id);
-                        // }
+                        else
+                        {
+                            bool param_inited = false;
+                            if (param.has_defval)
+                            {
+                                __traits(getMember, params, param.id) = param.default_value;
+                                param_inited = true;
+                            }
+                            if (param.name in namedargs)
+                            {
+                                __traits(getMember, params, param.id) =
+                                    cliTo!(typeof(param.default_value))(namedargs[param.name]);
+                                param_inited = true;
+                            }
+                            // if (param_inited == false)
+                            // {
+                            //     throw new Error("missing argument: " ~ param.id);
+                            // }
+                        }
                     }
                     else
                     {
