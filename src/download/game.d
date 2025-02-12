@@ -4,6 +4,7 @@ import dmcl.download;
 import dmcl.utils : libNameToPath, getOSName, checkRules, readVersionJSONSafe,
     downloadSafe, writeSafe, getSafe, getPath;
 import dmcl.config : config;
+import dmcl.env : LAUNCHER_PROFILES_JSON;
 
 import std.net.curl : get;
 import std.json : parseJSON;
@@ -28,8 +29,18 @@ void showVersionList(string mirror, string[] type = ["release"])
     }
 }
 
+void generateLauncherProfiles(string root_path)
+{
+    if (!exists(getPath(root_path, "launcher_profiles.json")))
+    {
+        writeSafe(getPath(root_path, "launcher_profiles.json"), LAUNCHER_PROFILES_JSON);
+    }
+}
+
 void downloadVanilla(string mirror, string root_path, string version_id, string version_name)
 {
+    generateLauncherProfiles(root_path);
+    // download
     string getVersionURL()
     {
         auto json = parseJSON(get(mc_meta[mirror] ~ "/mc/game/version_manifest.json"));
@@ -80,7 +91,8 @@ void downloadLibraries(string mirror, string root_path, string version_name)
                 {
                     downloadFile(DownloadFileMeta(
                             mc_maven[mirror] ~ "/" ~ libNameToPath(lib["name"].str),
-                            "%s/libraries/%s".format(root_path, libNameToPath(lib["name"].str))
+                            "%s/libraries/%s".format(root_path, libNameToPath(lib["name"].str)),
+                            "sha1" in lib.object ? lib["sha1"].str : null
                     ));
                 }
                 else
@@ -89,15 +101,12 @@ void downloadLibraries(string mirror, string root_path, string version_name)
                     { // this fucking file cannot be downloaded
                         continue;
                     }
-                    final switch (lib["url"].str)
-                    {
-                    case "http://files.minecraftforge.net/maven/":
-                        downloadFile(DownloadFileMeta(
-                                forge_maven[mirror] ~ "/" ~ libNameToPath(lib["name"].str),
-                                "%s/libraries/%s".format(root_path, libNameToPath(lib["name"].str))
-                        ));
-                        break;
-                    }
+                    downloadFile(DownloadFileMeta(
+                            mirrorUrl(mirror, null, "%s/%s".format(lib["url"].str,
+                            libNameToPath(lib["name"].str))),
+                            "%s/libraries/%s".format(root_path, libNameToPath(lib["name"].str)),
+                            "sha1" in lib.object ? lib["sha1"].str : null
+                    ));
                 }
                 // result ~= "%s/libraries/%s${classpath_separator}".format(
                 //     option.root_path, libNameToPath(lib["name"].str));

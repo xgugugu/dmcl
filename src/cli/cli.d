@@ -83,7 +83,7 @@ mixin template CLI_HELP(T)
     }
 }
 
-void startCli(T)(string[] args, T cli)
+void startCli(T)(string[] args, T cli, string default_command)
 {
     T cliTo(T)(ref string str)
     {
@@ -95,7 +95,7 @@ void startCli(T)(string[] args, T cli)
     }
 
     // parse args
-    string cmdname = args.length > 1 ? args[1] : "help";
+    string cmdname = args.length > 1 ? args[1] : default_command;
     string[] unnamedargs;
     string[string] namedargs;
     foreach (ref arg; args.length > 2 ? args[2 .. $] : [])

@@ -30,6 +30,16 @@ immutable string[string] neoforge_maven = [
     "bmclapi": "https://bmclapi2.bangbang93.com/maven"
 ];
 
+immutable string[string] fabric_meta = [
+    "official": "https://meta.fabricmc.net",
+    "bmclapi": "https://bmclapi2.bangbang93.com/fabric-meta"
+];
+
+immutable string[string] fabric_maven = [
+    "official": "https://maven.fabricmc.net",
+    "bmclapi": "https://bmclapi2.bangbang93.com/maven"
+];
+
 string mirrorUrl(string mirror, immutable string[string] mirrors, string url)
 {
     if (mirrors != null)
@@ -38,7 +48,11 @@ string mirrorUrl(string mirror, immutable string[string] mirrors, string url)
     }
     else
     {
-        foreach (ref rules; [mc_maven, mc_assets, forge_maven, neoforge_maven])
+        foreach (ref rules; [
+                mc_maven, mc_assets,
+                forge_maven, neoforge_maven,
+                fabric_maven
+            ])
         {
             if (url.canFind(rules[mirror]))
             {

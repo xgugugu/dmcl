@@ -32,6 +32,8 @@ struct Config
     int download_max_tasks = 64;
     bool download_i_dont_need_music = false;
     string download_mirror = "official";
+    // cli configs
+    string cli_default_command = "prompt";
 }
 
 Config config;

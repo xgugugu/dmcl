@@ -12,5 +12,5 @@ void main(string[] args)
 		writeln("!!! DMCL SNAPSHOT !!!\n");
 	}
 	readConfig();
-	startCli(args, DmclCli());
+	startCli(args, DmclCli(), config.cli_default_command);
 }

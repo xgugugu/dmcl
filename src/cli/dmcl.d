@@ -13,7 +13,7 @@ import dmcl.env;
 
 struct DmclCli
 {
-    mixin CLI_HELP!DmclCli;
+    mixin CLI_PROMPT!DmclCli;
 
     static void preProcessArguments(string _, string key, string value)
     {
@@ -31,23 +31,9 @@ struct DmclCli
         }
     }
 
-    @Command("version", "show version info")
-    static void version_()
+    @PromptDiv
+    static void div_0()
     {
-        writeln(LAUNCHER_NAME ~ " version " ~ LAUNCHER_VERSION);
-        writeln("build time: " ~ __DATE__ ~ " " ~ __TIME__);
-    }
-
-    @Command("config", "show config")
-    static void config_cmd()
-    {
-        showConfig();
-    }
-
-    @Command("find-java", "auto find java")
-    static void find_java()
-    {
-        findJava();
     }
 
     @Command("launch", "launch game")
@@ -65,6 +51,40 @@ struct DmclCli
         launcher.launchGame();
     }
 
+    @PromptDiv
+    static void div_1()
+    {
+    }
+
+    @Command("install", "install game")
+    @UnnamedParam!string("version_id", "mc-version-id")
+    @UnnamedParam!string("version_name", "version-name")
+    @NamedParam!bool("is_install_forge", "forge")
+    @NamedParam!bool("is_install_neoforge", "neoforge")
+    @NamedParam!bool("is_install_fabric", "fabric")
+    static void install(string version_id, string version_name,
+        bool is_install_forge, bool is_install_neoforge,
+        bool is_install_fabric)
+    {
+        downloadVanilla(config.download_mirror, config.launch_minecraft_root_path, version_id, version_name);
+        if (is_install_forge)
+        {
+            installForge(config.download_mirror, config.launch_minecraft_root_path,
+                version_name, getLatestForge(config.download_mirror, version_id));
+        }
+        if (is_install_neoforge)
+        {
+            installNeoForge(config.download_mirror, config.launch_minecraft_root_path,
+                version_name, getLatestNeoForge(config.download_mirror, version_id));
+        }
+        if (is_install_fabric)
+        {
+            installFabric(config.download_mirror, config.launch_minecraft_root_path,
+                version_name, getLatestFabric(config.download_mirror, version_id));
+        }
+        downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, version_name);
+    }
+
     @Command("list-mc", "show minecraft version list")
     @NamedParam!(string[])("type", "type", "release,snapshot,...", ["release"])
     static void list_mc(string[] type)
@@ -79,32 +99,18 @@ struct DmclCli
         showForgeVersionList(config.download_mirror, mcver);
     }
 
-    @Command("list-neoforge", "show forge version list")
+    @Command("list-neoforge", "show neoforge version list")
     @UnnamedParam!(string)("verid", "mc-version-id")
     static void list_neoforge(string mcver)
     {
         showNeoForgeVersionList(config.download_mirror, mcver);
     }
 
-    @Command("install", "install game")
-    @UnnamedParam!string("verid", "mc-version-id")
-    @UnnamedParam!string("vername", "version-name")
-    @NamedParam!bool("is_install_forge", "forge")
-    @NamedParam!bool("is_install_neoforge", "neoforge")
-    static void install(string verid, string vername, bool is_install_forge, bool is_install_neoforge)
+    @Command("list-fabric", "show fabric version list")
+    @UnnamedParam!(string)("verid", "mc-version-id")
+    static void list_fabric(string mc_version)
     {
-        downloadVanilla(config.download_mirror, config.launch_minecraft_root_path, verid, vername);
-        if (is_install_forge)
-        {
-            installForge(config.download_mirror, config.launch_minecraft_root_path,
-                vername, getLatestForge(config.download_mirror, verid));
-        }
-        if (is_install_neoforge)
-        {
-            installNeoForge(config.download_mirror, config.launch_minecraft_root_path,
-                vername, getLatestNeoForge(config.download_mirror, verid));
-        }
-        downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
+        showFabricVersionList(config.download_mirror, mc_version);
     }
 
     @Command("install-forge", "install forge on version")
@@ -123,5 +129,44 @@ struct DmclCli
     {
         installNeoForge(config.download_mirror, config.launch_minecraft_root_path, vername, forgever);
         downloadGameFiles(config.download_mirror, config.launch_minecraft_root_path, vername);
+    }
+
+    @Command("search-java", "search java automatically")
+    static void find_java()
+    {
+        findJava();
+    }
+
+    @PromptDiv
+    static void div_2()
+    {
+    }
+
+    mixin CLI_HELP!DmclCli;
+
+    @Command("version", "show version")
+    static void version_()
+    {
+        writeln(LAUNCHER_NAME ~ " version " ~ LAUNCHER_VERSION);
+        writeln("build time: " ~ __DATE__ ~ " " ~ __TIME__);
+        writeln();
+        writeln("thanks: bmclapi");
+    }
+
+    @Command("config", "show config")
+    static void config_cmd()
+    {
+        showConfig();
+    }
+
+    @Command("edit-config", "edit config")
+    static void edit_config()
+    {
+        writeln("Tip: edit ", getConfigPath());
+    }
+
+    @PromptDiv
+    static void div_3()
+    {
     }
 }
